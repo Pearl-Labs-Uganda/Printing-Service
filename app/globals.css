@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* ─── Pearl Labs Design Tokens ─── */
+:root {
+  --brand-blue:        #002D5B;
+  --brand-orange:      #EF8633;
+  --bg:                #F4FAFF;
+  --bg-surface:        #FFFFFF;
+  --bg-container:      #E3F0F8;
+  --bg-container-low:  #E9F6FD;
+  --bg-container-high: #DDE9F2;
+  --bg-dim:            #CFE0E4;
+  --text-primary:      #111D23;
+  --text-secondary:    #4C616C;
+  --radius-sm:  0.5rem;
+  --radius-md:  1rem;
+  --radius-lg:  1.5rem;
+  --radius-xl:  2rem;
+  --shadow-sm: 0 2px 8px rgba(0,45,91,0.07);
+  --shadow-md: 0 4px 24px rgba(0,45,91,0.10);
+  --shadow-lg: 0 8px 40px rgba(0,45,91,0.14);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body, 'Manrope', sans-serif);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* Layer bar animation */
+@keyframes layerGrow {
+  from { transform: scaleY(0); transform-origin: bottom; }
+  to   { transform: scaleY(1);  transform-origin: bottom; }
+}
+.layer-bar { animation: layerGrow 2s ease-out both; }
+
+/* Pulse dot */
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:0.5; transform:scale(1.3); }
+}
+.pulse-dot { animation: pulse 1.5s infinite; }
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 0.7s linear infinite; }
