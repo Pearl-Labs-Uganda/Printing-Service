@@ -77,7 +77,7 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
 
   return (
     <section id="upload" style={{ padding: "72px 2rem", background: "var(--bg)" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div className="container" style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ fontFamily: "var(--font-label)", fontSize: "0.72rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--brand-orange)", marginBottom: "0.4rem" }}>
           Instant Quote
         </div>
@@ -127,7 +127,7 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
           })}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", alignItems: "start" }}>
+        <div className="upload-grid" style={{ alignItems: "start" }}>
           {/* Left */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             {/* Upload Card */}
@@ -183,7 +183,7 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
               <div style={{ fontFamily: "var(--font-headline)", fontSize: "1.1rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <Settings size={18} strokeWidth={1.5} /> Print Configuration
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div className="upload-config-grid">
                 {/* Layer height */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label style={LABEL_STYLE}>Layer Height</label>

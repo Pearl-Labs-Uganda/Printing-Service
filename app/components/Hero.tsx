@@ -40,10 +40,8 @@ export default function Hero() {
       />
 
       <div
-        style={{
-          maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1,
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center",
-        }}
+        className="container hero-grid"
+        style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}
       >
         {/* Left */}
         <div>
@@ -86,7 +84,7 @@ export default function Hero() {
             50% to unlock slicing and confirm your print.
           </p>
 
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <div className="hero-btn-group" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             <button
               onClick={() => scrollTo("upload")}
               style={{
@@ -113,12 +111,7 @@ export default function Hero() {
           </div>
 
           {/* Stats */}
-          <div
-            style={{
-              display: "flex", gap: "2rem", marginTop: "2.5rem",
-              paddingTop: "2rem", borderTop: "1px solid rgba(255,255,255,0.12)",
-            }}
-          >
+          <div className="stats-row" style={{ display: "flex", gap: "2rem", marginTop: "2.5rem", paddingTop: "2rem", borderTop: "1px solid rgba(255,255,255,0.12)" }}>
             {[
               { label: "Prints Completed", value: "12,400+" },
               { label: "Avg Turnaround",   value: "48hrs"   },

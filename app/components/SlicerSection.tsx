@@ -94,6 +94,7 @@ export default function SlicerSection({ unlocked, onUnlockClick }: Props) {
               </div>
             )}
             <iframe
+              className="slicer-iframe"
               src="https://grid.space/kiri/"
               title="Kiri:Moto 3D Slicer"
               allow="fullscreen"

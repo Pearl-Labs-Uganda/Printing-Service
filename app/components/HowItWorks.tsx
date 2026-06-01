@@ -46,10 +46,8 @@ export default function HowItWorks() {
         </p>
 
         <div
+          className="step-grid"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "1.5px",
             background: "var(--bg-container)",
             border: "1.5px solid var(--bg-container)",
             borderRadius: "var(--radius-lg)",

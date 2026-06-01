@@ -19,13 +19,11 @@ export default function Navbar() {
       }}
     >
       <div
+        className="nav-inner"
         style={{
           maxWidth: 1100,
           margin: "0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          height: 60,
+          padding: "0.75rem 0",
           gap: "2rem",
         }}
       >
@@ -67,7 +65,7 @@ export default function Navbar() {
         </a>
 
         {/* Links */}
-        <ul style={{ display: "flex", alignItems: "center", gap: "0.25rem", listStyle: "none" }}>
+        <ul className="nav-links" style={{ listStyle: "none" }}>
           {[
             { label: "How it works", id: "how-it-works" },
             { label: "Materials", id: "materials" },

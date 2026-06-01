@@ -26,14 +26,13 @@ const fmt = (n: number) => `UGX ${n.toLocaleString()}`;
 export default function QuotePanel({ status, quote, onPay }: Props) {
   return (
     <div
+      className="quote-panel"
       style={{
         background: "var(--bg-surface)",
         border: "1.5px solid var(--bg-container)",
         borderRadius: "var(--radius-lg)",
         padding: "2rem",
         boxShadow: "var(--shadow-sm)",
-        position: "sticky",
-        top: 76,
       }}
     >
       {/* Header */}
@@ -132,7 +131,7 @@ export default function QuotePanel({ status, quote, onPay }: Props) {
           </div>
 
           {/* Split */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1.25rem" }}>
+          <div className="split-grid" style={{ marginBottom: "1.25rem" }}>
             <div
               style={{
                 background: "rgba(239,134,51,0.06)", border: "1.5px solid rgba(239,134,51,0.35)",

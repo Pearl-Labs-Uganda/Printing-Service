@@ -118,7 +118,7 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: "0.75rem" }}>
+        <div className="modal-actions" style={{ display: "flex", gap: "0.75rem" }}>
           <button
             onClick={onClose}
             style={{
