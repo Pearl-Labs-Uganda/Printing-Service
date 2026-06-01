@@ -2,8 +2,6 @@
 import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
-import HowItWorks from "./components/HowItWorks";
-import Materials from "./components/Materials";
 import UploadSection from "./components/UploadSection";
 import SlicerSection from "./components/SlicerSection";
 import PaymentModal from "./components/PaymentModal";
@@ -12,8 +10,6 @@ import Footer from "./components/Footer";
 import { QuoteData } from "./components/QuotePanel";
 
 export default function Home() {
-  const [selectedMat, setSelectedMat] = useState("PLA");
-  const [matPrice, setMatPrice] = useState(2.5);
   const [step, setStep] = useState(1);
   const [slicerUnlocked, setSlicerUnlocked] = useState(false);
 
@@ -23,11 +19,6 @@ export default function Home() {
 
   const [successOpen, setSuccessOpen] = useState(false);
   const [orderId, setOrderId] = useState("");
-
-  const handleSelectMat = (id: string, price: number) => {
-    setSelectedMat(id);
-    setMatPrice(price);
-  };
 
   const handlePayOpen = (q: QuoteData, fileName: string) => {
     setPayQuote(q);
@@ -53,11 +44,9 @@ export default function Home() {
     <>
       <Navbar />
       <Hero />
-      <HowItWorks />
-      <Materials selected={selectedMat} onSelect={handleSelectMat} />
       <UploadSection
-        selectedMat={selectedMat}
-        matPrice={matPrice}
+        selectedMat="PLA"
+        matPrice={2.5}
         step={step}
         onStepChange={setStep}
         onPayOpen={handlePayOpen}

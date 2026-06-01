@@ -1,10 +1,26 @@
 "use client";
 import { Printer } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
+  const pathname = usePathname();
+
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const navLinkStyle = (active: boolean): React.CSSProperties => ({
+    padding: "0.45rem 0.9rem",
+    fontFamily: "var(--font-label)",
+    fontSize: "0.82rem",
+    fontWeight: active ? 600 : 500,
+    color: active ? "var(--brand-blue)" : "var(--text-secondary)",
+    background: active ? "var(--bg-container-low)" : "transparent",
+    borderRadius: "var(--radius-sm)",
+    textDecoration: "none",
+    display: "inline-block",
+  });
 
   return (
     <nav
@@ -23,13 +39,16 @@ export default function Navbar() {
         style={{
           maxWidth: 1100,
           margin: "0 auto",
-          padding: "0.75rem 0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          height: 60,
           gap: "2rem",
         }}
       >
         {/* Logo */}
-        <a
-          href="#"
+        <Link
+          href="/"
           style={{ display: "flex", alignItems: "center", gap: "0.6rem", textDecoration: "none" }}
         >
           <div
@@ -62,46 +81,50 @@ export default function Navbar() {
               3D Print Service
             </span>
           </div>
-        </a>
+        </Link>
 
         {/* Links */}
-        <ul className="nav-links" style={{ listStyle: "none" }}>
-          {[
-            { label: "How it works", id: "how-it-works" },
-            { label: "Materials", id: "materials" },
-            { label: "Slicer", id: "slicer" },
-          ].map((l) => (
-            <li key={l.id}>
-              <button
-                onClick={() => scrollTo(l.id)}
-                style={{
-                  padding: "0.45rem 0.9rem",
-                  fontFamily: "var(--font-label)",
-                  fontSize: "0.82rem",
-                  fontWeight: 500,
-                  color: "var(--text-secondary)",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  cursor: "pointer",
-                  transition: "color 0.15s, background 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.color = "var(--brand-blue)";
-                  (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-container-low)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)";
-                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-                }}
-              >
-                {l.label}
-              </button>
-            </li>
-          ))}
+        <ul className="nav-links" style={{ display: "flex", alignItems: "center", gap: "0.25rem", listStyle: "none" }}>
+          <li>
+            <Link href="/how-it-works" style={navLinkStyle(pathname === "/how-it-works")}>
+              How it works
+            </Link>
+          </li>
+          <li>
+            <Link href="/materials" style={navLinkStyle(pathname === "/materials")}>
+              Materials
+            </Link>
+          </li>
           <li>
             <button
-              onClick={() => scrollTo("upload")}
+              onClick={() => scrollTo("slicer")}
+              style={{
+                padding: "0.45rem 0.9rem",
+                fontFamily: "var(--font-label)",
+                fontSize: "0.82rem",
+                fontWeight: 500,
+                color: "var(--text-secondary)",
+                background: "transparent",
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                cursor: "pointer",
+                transition: "color 0.15s, background 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--brand-blue)";
+                (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-container-low)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)";
+                (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+              }}
+            >
+              Slicer
+            </button>
+          </li>
+          <li>
+            <Link
+              href="/#upload"
               style={{
                 padding: "0.45rem 1rem",
                 fontFamily: "var(--font-label)",
@@ -109,13 +132,13 @@ export default function Navbar() {
                 fontWeight: 600,
                 color: "#fff",
                 background: "var(--brand-orange)",
-                border: "none",
                 borderRadius: "var(--radius-sm)",
-                cursor: "pointer",
+                textDecoration: "none",
+                display: "inline-block",
               }}
             >
               Get a Quote →
-            </button>
+            </Link>
           </li>
         </ul>
       </div>

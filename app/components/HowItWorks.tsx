@@ -1,3 +1,5 @@
+"use client";
+
 import { Upload, Calculator, CreditCard, PackageCheck } from "lucide-react";
 
 const STEPS = [
