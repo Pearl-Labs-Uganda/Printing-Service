@@ -2,6 +2,8 @@
 import { useState, useRef, useCallback } from "react";
 import { UploadCloud, FileText, CheckCircle, Settings } from "lucide-react";
 import QuotePanel, { QuoteData } from "./QuotePanel";
+import Preview3D from "./Preview3D";
+import { MATERIALS } from "./Materials";
 
 const LABEL_STYLE: React.CSSProperties = {
   fontFamily: "var(--font-label)", fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)",
@@ -19,9 +21,10 @@ interface Props {
   step: number;
   onStepChange: (s: number) => void;
   onPayOpen: (q: QuoteData, fileName: string) => void;
+  onMatChange?: (matId: string, price: number) => void;
 }
 
-export default function UploadSection({ selectedMat, matPrice, step, onStepChange, onPayOpen }: Props) {
+export default function UploadSection({ selectedMat, matPrice, step, onStepChange, onPayOpen, onMatChange }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [quoteStatus, setQuoteStatus] = useState<"idle" | "loading" | "ready">("idle");
@@ -34,15 +37,15 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
   const inputRef = useRef<HTMLInputElement>(null);
 
   const calcQuote = useCallback(
-    (f: File, lh: number, inf: number, ql: number, q: number, customCol: boolean) => {
+    (f: File, lh: number, inf: number, ql: number, q: number, customCol: boolean, mat: string = selectedMat, matPriceVal: number = matPrice) => {
       const baseWt = Math.max(14, (f.size / 1024) * 0.11 * (inf / 30));
       const wt = parseFloat((baseWt * ql).toFixed(1));
       const mins = Math.round(wt * (lh === 0.1 ? 4.5 : lh === 0.2 ? 2.8 : 1.8) * ql * q);
       const hrs = Math.floor(mins / 60), rm = mins % 60;
-      const matCostTotal = Math.round(wt * matPrice * 1000) * q;
+      const matCostTotal = Math.round(wt * matPriceVal * 1000) * q;
       const total = matCostTotal + 15000 + (customCol ? 5000 : 0);
       const half = Math.round(total / 2);
-      return { wt, hrs, rm, qty: q, total, half, bal: total - half, customCol, mat: selectedMat, lh, inf };
+      return { wt, hrs, rm, qty: q, total, half, bal: total - half, customCol, mat, lh, inf };
     },
     [matPrice, selectedMat]
   );
@@ -68,9 +71,16 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
     runQuote(f);
   };
 
-  const reCalc = (lh = layer, inf = infill, ql = quality, q = qty, col = colour) => {
+  const reCalc = (lh = layer, inf = infill, ql = quality, q = qty, col = colour, mat = selectedMat, matPriceVal = matPrice) => {
     if (!file) return;
-    runQuote(file, lh, inf, ql, q, col);
+    setQuoteStatus("loading");
+    onStepChange(2);
+    setTimeout(() => {
+      const result = calcQuote(file, parseFloat(lh), parseInt(inf), parseFloat(ql), q, col.includes("Custom"), mat, matPriceVal);
+      setQuote(result);
+      setQuoteStatus("ready");
+      onStepChange(3);
+    }, 1600);
   };
 
   const progSteps = ["Upload", "Configure", "Quote", "Pay & Slice"];
@@ -184,6 +194,23 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                 <Settings size={18} strokeWidth={1.5} /> Print Configuration
               </div>
               <div className="upload-config-grid">
+                {/* Material */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", gridColumn: "1 / -1" }}>
+                  <label style={LABEL_STYLE}>Material</label>
+                  <select style={SELECT_STYLE} value={selectedMat} onChange={(e) => {
+                    const material = MATERIALS.find(m => m.id === e.target.value);
+                    if (material) {
+                      onMatChange?.(material.id, material.pricePerGram);
+                      if (file) {
+                        setTimeout(() => reCalc(layer, infill, quality, qty, colour, material.id, material.pricePerGram), 0);
+                      }
+                    }
+                  }}>
+                    {MATERIALS.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
                 {/* Layer height */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label style={LABEL_STYLE}>Layer Height</label>
@@ -232,12 +259,19 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
             </div>
           </div>
 
-          {/* Right — Quote */}
-          <QuotePanel
-            status={quoteStatus}
-            quote={quote}
-            onPay={() => { if (quote && file) onPayOpen(quote, file.name); }}
-          />
+          {/* Right — Preview & Quote */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            {/* Preview */}
+            <div style={{ background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-lg)", padding: "1.5rem", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", minHeight: 450 }}>
+              <Preview3D file={file} color={colour} material={selectedMat} />
+            </div>
+            {/* Quote */}
+            <QuotePanel
+              status={quoteStatus}
+              quote={quote}
+              onPay={() => { if (quote && file) onPayOpen(quote, file.name); }}
+            />
+          </div>
         </div>
       </div>
     </section>

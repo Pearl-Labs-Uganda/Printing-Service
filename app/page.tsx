@@ -12,6 +12,8 @@ import { QuoteData } from "./components/QuotePanel";
 export default function Home() {
   const [step, setStep] = useState(1);
   const [slicerUnlocked, setSlicerUnlocked] = useState(false);
+  const [selectedMat, setSelectedMat] = useState("PLA");
+  const [matPrice, setMatPrice] = useState(2.5);
 
   const [payOpen, setPayOpen] = useState(false);
   const [payQuote, setPayQuote] = useState<QuoteData | null>(null);
@@ -45,11 +47,15 @@ export default function Home() {
       <Navbar />
       <Hero />
       <UploadSection
-        selectedMat="PLA"
-        matPrice={2.5}
+        selectedMat={selectedMat}
+        matPrice={matPrice}
         step={step}
         onStepChange={setStep}
         onPayOpen={handlePayOpen}
+        onMatChange={(matId, price) => {
+          setSelectedMat(matId);
+          setMatPrice(price);
+        }}
       />
       <SlicerSection
         unlocked={slicerUnlocked}
