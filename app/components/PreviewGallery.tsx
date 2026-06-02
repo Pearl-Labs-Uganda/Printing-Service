@@ -263,7 +263,7 @@ function PreviewTile({ file, color, material, layerHeight, infill, quality, quan
   );
 }
 
-export default function Preview3D({ files, color, material, layerHeight, infill, quality, quantity }: Props) {
+export default function PreviewGallery({ files, color, material, layerHeight, infill, quality, quantity }: Props) {
   return (
     <div className="preview-container">
       <div className="preview-header">

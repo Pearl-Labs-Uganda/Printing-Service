@@ -26,6 +26,11 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
   if (!open || !quote) return null;
 
   const fmt = (n: number) => `UGX ${n.toLocaleString()}`;
+  const fieldIds = {
+    name: "payment-full-name",
+    email: "payment-email",
+    phone: "payment-phone",
+  };
 
   const handlePay = () => {
     if (!name.trim() || !email.trim() || !phone.trim()) {
@@ -42,6 +47,9 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="payment-modal-title"
       style={{
         position: "fixed", inset: 0, background: "rgba(0,15,30,0.6)",
         backdropFilter: "blur(6px)", zIndex: 1000, display: "flex",
@@ -49,15 +57,10 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        style={{
-          background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)",
-          borderRadius: "var(--radius-xl)", padding: "2.5rem", maxWidth: 500, width: "100%",
-          position: "relative", boxShadow: "var(--shadow-lg)",
-        }}
-      >
+      <div className="modal-content" style={{ position: "relative" }}>
         <button
           onClick={onClose}
+          aria-label="Close payment dialog"
           style={{
             position: "absolute", top: "1rem", right: "1rem", background: "var(--bg-container)",
             border: "none", width: 32, height: 32, borderRadius: "var(--radius-sm)",
@@ -68,7 +71,7 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
           <X size={16} />
         </button>
 
-        <h3 style={{ fontFamily: "var(--font-headline)", fontSize: "1.4rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "0.4rem" }}>
+        <h3 id="payment-modal-title" style={{ fontFamily: "var(--font-headline)", fontSize: "1.4rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "0.4rem" }}>
           Confirm Order &amp; Pay Deposit
         </h3>
         <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "1.75rem", lineHeight: 1.6 }}>
@@ -108,9 +111,11 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
             { label: "Phone Number",  type: "tel",   val: phone, set: setPhone, ph: "+256 700 000 000"     },
           ].map((f) => (
             <div key={f.label} style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              <label style={{ fontFamily: "var(--font-label)", fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)" }}>{f.label}</label>
+              <label htmlFor={f.label === "Full Name" ? fieldIds.name : f.label === "Email Address" ? fieldIds.email : fieldIds.phone} style={{ fontFamily: "var(--font-label)", fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)" }}>{f.label}</label>
               <input
+                id={f.label === "Full Name" ? fieldIds.name : f.label === "Email Address" ? fieldIds.email : fieldIds.phone}
                 type={f.type} placeholder={f.ph} value={f.val}
+                autoComplete={f.type === "email" ? "email" : f.type === "tel" ? "tel" : "name"}
                 onChange={(e) => f.set(e.target.value)} style={INPUT_STYLE}
               />
             </div>

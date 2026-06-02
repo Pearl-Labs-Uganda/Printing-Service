@@ -2,6 +2,7 @@
 import { Printer } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -10,6 +11,7 @@ export default function Navbar() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const [menuOpen, setMenuOpen] = useState(false);
   const navLinkStyle = (active: boolean): React.CSSProperties => ({
     padding: "0.45rem 0.9rem",
     fontFamily: "var(--font-label)",
@@ -23,29 +25,8 @@ export default function Navbar() {
   });
 
   return (
-    <nav
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        background: "rgba(244,250,255,0.92)",
-        backdropFilter: "blur(16px)",
-        borderBottom: "1px solid var(--bg-container)",
-        padding: "0 2rem",
-      }}
-    >
-      <div
-        className="nav-inner"
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          height: 60,
-          gap: "2rem",
-        }}
-      >
+    <nav className="site-nav">
+      <div className="nav-inner container">
         {/* Logo */}
         <Link
           href="/"
@@ -84,20 +65,35 @@ export default function Navbar() {
         </Link>
 
         {/* Links */}
-        <ul className="nav-links" style={{ display: "flex", alignItems: "center", gap: "0.25rem", listStyle: "none" }}>
+        <button
+          className="nav-toggle tap-target"
+          aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+          aria-controls="primary-navigation"
+          onClick={() => setMenuOpen((s) => !s)}
+        >
+          <svg width="22" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+        <ul id="primary-navigation" className={`nav-links ${menuOpen ? "open" : ""}`} style={{ listStyle: "none" }}>
           <li>
-            <Link href="/how-it-works" style={navLinkStyle(pathname === "/how-it-works")}>
+            <Link href="/how-it-works" style={navLinkStyle(pathname === "/how-it-works")} onClick={() => setMenuOpen(false)}>
               How it works
             </Link>
           </li>
           <li>
-            <Link href="/materials" style={navLinkStyle(pathname === "/materials")}>
+            <Link href="/materials" style={navLinkStyle(pathname === "/materials")} onClick={() => setMenuOpen(false)}>
               Materials
             </Link>
           </li>
           <li>
             <button
-              onClick={() => scrollTo("slicer")}
+              onClick={() => {
+                setMenuOpen(false);
+                scrollTo("slicer");
+              }}
               style={{
                 padding: "0.45rem 0.9rem",
                 fontFamily: "var(--font-label)",
@@ -125,6 +121,8 @@ export default function Navbar() {
           <li>
             <Link
               href="/#upload"
+              className="tap-target"
+              onClick={() => setMenuOpen(false)}
               style={{
                 padding: "0.45rem 1rem",
                 fontFamily: "var(--font-label)",

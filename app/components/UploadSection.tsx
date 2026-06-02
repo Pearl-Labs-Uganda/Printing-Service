@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from "react";
 import { UploadCloud, FileText, CheckCircle, Settings } from "lucide-react";
 import QuotePanel, { QuoteData } from "./QuotePanel";
-import Preview3D from "./Preview3D";
+import PreviewGallery from "./PreviewGallery";
 import { MATERIALS } from "./Materials";
 
 const LABEL_STYLE: React.CSSProperties = {
@@ -25,7 +25,7 @@ interface Props {
 }
 
 export default function UploadSection({ selectedMat, matPrice, step, onStepChange, onPayOpen, onMatChange }: Props) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [quoteStatus, setQuoteStatus] = useState<"idle" | "loading" | "ready">("idle");
   const [quote, setQuote] = useState<QuoteData | null>(null);
@@ -36,9 +36,14 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
   const [colour, setColour] = useState("White");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const fileSummary = files.length === 1 ? files[0].name : `${files.length} STL files`;
+  const totalSizeKb = files.reduce((sum, currentFile) => sum + currentFile.size, 0) / 1024;
+
   const calcQuote = useCallback(
-    (f: File, lh: number, inf: number, ql: number, q: number, customCol: boolean, mat: string = selectedMat, matPriceVal: number = matPrice) => {
-      const baseWt = Math.max(14, (f.size / 1024) * 0.11 * (inf / 30));
+    (fileList: File[], lh: number, inf: number, ql: number, q: number, customCol: boolean, mat: string = selectedMat, matPriceVal: number = matPrice) => {
+      const baseWt = fileList.reduce((sum, currentFile) => {
+        return sum + Math.max(14, (currentFile.size / 1024) * 0.11 * (inf / 30));
+      }, 0);
       const wt = parseFloat((baseWt * ql).toFixed(1));
       const mins = Math.round(wt * (lh === 0.1 ? 4.5 : lh === 0.2 ? 2.8 : 1.8) * ql * q);
       const hrs = Math.floor(mins / 60), rm = mins % 60;
@@ -51,11 +56,11 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
   );
 
   const runQuote = useCallback(
-    (f: File, lh = layer, inf = infill, ql = quality, q = qty, col = colour) => {
+    (fileList: File[], lh = layer, inf = infill, ql = quality, q = qty, col = colour) => {
       setQuoteStatus("loading");
       onStepChange(2);
       setTimeout(() => {
-        const result = calcQuote(f, parseFloat(lh), parseInt(inf), parseFloat(ql), q, col.includes("Custom"));
+        const result = calcQuote(fileList, parseFloat(lh), parseInt(inf), parseFloat(ql), q, col.includes("Custom"));
         setQuote(result);
         setQuoteStatus("ready");
         onStepChange(3);
@@ -64,19 +69,21 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
     [calcQuote, layer, infill, quality, qty, colour, onStepChange]
   );
 
-  const handleFile = (f: File) => {
-    if (!f.name.toLowerCase().endsWith(".stl")) return;
-    setFile(f);
+  const handleFiles = (incomingFiles: File[]) => {
+    const validFiles = incomingFiles.filter((currentFile) => currentFile.name.toLowerCase().endsWith(".stl"));
+    if (validFiles.length === 0) return;
+
+    setFiles(validFiles);
     onStepChange(2);
-    runQuote(f);
+    runQuote(validFiles);
   };
 
   const reCalc = (lh = layer, inf = infill, ql = quality, q = qty, col = colour, mat = selectedMat, matPriceVal = matPrice) => {
-    if (!file) return;
+    if (files.length === 0) return;
     setQuoteStatus("loading");
     onStepChange(2);
     setTimeout(() => {
-      const result = calcQuote(file, parseFloat(lh), parseInt(inf), parseFloat(ql), q, col.includes("Custom"), mat, matPriceVal);
+      const result = calcQuote(files, parseFloat(lh), parseInt(inf), parseFloat(ql), q, col.includes("Custom"), mat, matPriceVal);
       setQuote(result);
       setQuoteStatus("ready");
       onStepChange(3);
@@ -84,6 +91,14 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
   };
 
   const progSteps = ["Upload", "Configure", "Quote", "Pay & Slice"];
+  const fieldIds = {
+    material: "material-select",
+    layer: "layer-height-select",
+    infill: "infill-select",
+    quality: "quality-select",
+    quantity: "quantity-input",
+    colour: "colour-select",
+  };
 
   return (
     <section id="upload" style={{ padding: "72px 2rem", background: "var(--bg)" }}>
@@ -99,7 +114,7 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
         </p>
 
         {/* Progress */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: "2.5rem" }}>
+        <div className="prog-steps">
           {progSteps.map((label, i) => {
             const n = i + 1;
             const isDone = n < step, isActive = n === step;
@@ -130,20 +145,18 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                   </span>
                 </div>
                 {i < 3 && (
-                  <div style={{ width: 40, height: 2, background: "var(--bg-container)", margin: "0 6px" }} />
+                  <div className="connector" />
                 )}
               </div>
             );
           })}
         </div>
 
-        <div className="upload-grid" style={{ alignItems: "start" }}>
-          {/* Left */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            {/* Upload Card */}
-            <div style={{ background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-lg)", padding: "2rem", boxShadow: "var(--shadow-sm)" }}>
+        <div className="upload-layout">
+          {/* Upload Card */}
+          <div className="upload-card upload-card-compact" style={{ background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)" }}>
               <div style={{ fontFamily: "var(--font-headline)", fontSize: "1.1rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <UploadCloud size={18} strokeWidth={1.5} /> Your STL File
+                <UploadCloud size={18} strokeWidth={1.5} /> Upload STL
               </div>
 
               {/* Drop zone */}
@@ -151,57 +164,71 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  handleFiles(Array.from(e.dataTransfer.files));
+                }}
                 style={{
-                  border: `2px dashed ${file ? "#22c55e" : dragOver ? "var(--brand-blue)" : "var(--bg-dim)"}`,
-                  borderRadius: "var(--radius-md)", padding: "2.5rem 1.5rem",
+                  border: `2px dashed ${files.length > 0 ? "#22c55e" : dragOver ? "var(--brand-blue)" : "var(--bg-dim)"}`,
+                  borderRadius: "var(--radius-md)", padding: "1.5rem 1.25rem",
                   textAlign: "center", cursor: "pointer",
                   background: dragOver ? "var(--bg-container-low)" : "transparent",
-                  transition: "all 0.2s", marginBottom: file ? "1rem" : 0,
+                  transition: "all 0.2s", marginBottom: files.length > 0 ? "1rem" : 0,
                 }}
               >
-                <input ref={inputRef} type="file" accept=".stl" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem", color: file ? "#22c55e" : "var(--brand-blue)" }}>
+                <input ref={inputRef} type="file" multiple accept=".stl" aria-label="Upload STL files" style={{ display: "none" }} onChange={(e) => { handleFiles(Array.from(e.target.files ?? [])); }} />
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem", color: files.length > 0 ? "#22c55e" : "var(--brand-blue)" }}>
                   <UploadCloud size={32} strokeWidth={1.5} />
                 </div>
                 <h3 style={{ fontFamily: "var(--font-headline)", fontSize: "1rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "0.4rem" }}>
-                  Drop your STL file here
+                  Drop your STL file{files.length > 1 ? "s" : ""} here
                 </h3>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>or click to browse</p>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>or click to browse multiple files</p>
                 <div style={{ marginTop: "0.75rem", fontFamily: "var(--font-label)", fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--brand-orange)" }}>
                   Accepted: .STL
                 </div>
               </div>
 
               {/* File strip */}
-              {file && (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "var(--bg-container-low)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-sm)", padding: "0.75rem 1rem" }}>
+              {files.length > 0 && (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", background: "var(--bg-container-low)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-sm)", padding: "0.75rem 1rem" }}>
                   <FileText size={20} strokeWidth={1.5} style={{ color: "var(--brand-blue)", flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <strong style={{ display: "block", fontSize: "0.875rem", color: "var(--brand-blue)", fontWeight: 600 }}>{file.name}</strong>
+                    <strong style={{ display: "block", fontSize: "0.875rem", color: "var(--brand-blue)", fontWeight: 600 }}>{fileSummary}</strong>
                     <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "var(--font-label)" }}>
-                      {(file.size / 1024).toFixed(1)} KB · STL
+                      {totalSizeKb.toFixed(1)} KB total · {files.length} STL{files.length > 1 ? "s" : ""}
                     </span>
+                    {files.length > 1 && (
+                      <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                        {files.map((currentFile) => (
+                          <span key={currentFile.name + currentFile.size} style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>
+                            {currentFile.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <CheckCircle size={16} style={{ color: "#22c55e" }} />
                 </div>
               )}
-            </div>
+          </div>
 
+          <div className="config-preview-row">
             {/* Config Card */}
-            <div style={{ background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-lg)", padding: "2rem", boxShadow: "var(--shadow-sm)" }}>
+            <div className="upload-config-card" style={{ background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)" }}>
               <div style={{ fontFamily: "var(--font-headline)", fontSize: "1.1rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <Settings size={18} strokeWidth={1.5} /> Print Configuration
               </div>
               <div className="upload-config-grid">
                 {/* Material */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", gridColumn: "1 / -1" }}>
-                  <label style={LABEL_STYLE}>Material</label>
-                  <select style={SELECT_STYLE} value={selectedMat} onChange={(e) => {
+                  <label htmlFor={fieldIds.material} style={LABEL_STYLE}>Material</label>
+                  <select id={fieldIds.material} style={SELECT_STYLE} value={selectedMat} onChange={(e) => {
                     const material = MATERIALS.find(m => m.id === e.target.value);
                     if (material) {
                       onMatChange?.(material.id, material.pricePerGram);
-                      if (file) {
+                      if (files.length > 0) {
                         setTimeout(() => reCalc(layer, infill, quality, qty, colour, material.id, material.pricePerGram), 0);
                       }
                     }
@@ -213,8 +240,8 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                 </div>
                 {/* Layer height */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                  <label style={LABEL_STYLE}>Layer Height</label>
-                  <select style={SELECT_STYLE} value={layer} onChange={(e) => { setLayer(e.target.value); reCalc(e.target.value); }}>
+                  <label htmlFor={fieldIds.layer} style={LABEL_STYLE}>Layer Height</label>
+                  <select id={fieldIds.layer} style={SELECT_STYLE} value={layer} onChange={(e) => { setLayer(e.target.value); reCalc(e.target.value); }}>
                     <option value="0.1">0.1mm — Fine</option>
                     <option value="0.2">0.2mm — Standard</option>
                     <option value="0.3">0.3mm — Draft</option>
@@ -222,8 +249,8 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                 </div>
                 {/* Infill */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                  <label style={LABEL_STYLE}>Infill %</label>
-                  <select style={SELECT_STYLE} value={infill} onChange={(e) => { setInfill(e.target.value); reCalc(undefined, e.target.value); }}>
+                  <label htmlFor={fieldIds.infill} style={LABEL_STYLE}>Infill %</label>
+                  <select id={fieldIds.infill} style={SELECT_STYLE} value={infill} onChange={(e) => { setInfill(e.target.value); reCalc(undefined, e.target.value); }}>
                     <option value="15">15% — Hollow</option>
                     <option value="30">30% — Standard</option>
                     <option value="50">50% — Strong</option>
@@ -233,8 +260,8 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                 </div>
                 {/* Quality */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                  <label style={LABEL_STYLE}>Quality</label>
-                  <select style={SELECT_STYLE} value={quality} onChange={(e) => { setQuality(e.target.value); reCalc(undefined, undefined, e.target.value); }}>
+                  <label htmlFor={fieldIds.quality} style={LABEL_STYLE}>Quality</label>
+                  <select id={fieldIds.quality} style={SELECT_STYLE} value={quality} onChange={(e) => { setQuality(e.target.value); reCalc(undefined, undefined, e.target.value); }}>
                     <option value="1.0">Standard</option>
                     <option value="1.3">High Quality</option>
                     <option value="1.6">Ultra Quality</option>
@@ -242,14 +269,14 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                 </div>
                 {/* Qty */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                  <label style={LABEL_STYLE}>Quantity</label>
-                  <input type="number" min={1} max={100} value={qty} style={SELECT_STYLE}
+                  <label htmlFor={fieldIds.quantity} style={LABEL_STYLE}>Quantity</label>
+                  <input id={fieldIds.quantity} type="number" min={1} max={100} value={qty} style={SELECT_STYLE}
                     onChange={(e) => { const v = Math.max(1, parseInt(e.target.value) || 1); setQty(v); reCalc(undefined, undefined, undefined, v); }} />
                 </div>
                 {/* Colour */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", gridColumn: "1 / -1" }}>
-                  <label style={LABEL_STYLE}>Colour</label>
-                  <select style={SELECT_STYLE} value={colour} onChange={(e) => { setColour(e.target.value); reCalc(undefined, undefined, undefined, undefined, e.target.value); }}>
+                  <label htmlFor={fieldIds.colour} style={LABEL_STYLE}>Colour</label>
+                  <select id={fieldIds.colour} style={SELECT_STYLE} value={colour} onChange={(e) => { setColour(e.target.value); reCalc(undefined, undefined, undefined, undefined, e.target.value); }}>
                     {["White","Black","Red","Blue","Green","Yellow","Custom Colour (+UGX 5,000)"].map((c) => (
                       <option key={c}>{c}</option>
                     ))}
@@ -257,19 +284,26 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                 </div>
               </div>
             </div>
+
+            {/* Preview */}
+            <div className="preview-card" style={{ background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)", boxShadow: "var(--shadow-sm)" }}>
+              <PreviewGallery
+                files={files}
+                color={colour}
+                material={selectedMat}
+                layerHeight={parseFloat(layer)}
+                infill={parseInt(infill)}
+                quality={parseFloat(quality)}
+                quantity={qty}
+              />
+            </div>
           </div>
 
-          {/* Right — Preview & Quote */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            {/* Preview */}
-            <div style={{ background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-lg)", padding: "1.5rem", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", minHeight: 450 }}>
-              <Preview3D file={file} color={colour} material={selectedMat} />
-            </div>
-            {/* Quote */}
+          <div className="quote-row">
             <QuotePanel
               status={quoteStatus}
               quote={quote}
-              onPay={() => { if (quote && file) onPayOpen(quote, file.name); }}
+              onPay={() => { if (quote && files.length > 0) onPayOpen(quote, fileSummary); }}
             />
           </div>
         </div>

@@ -1,5 +1,5 @@
 "use client";
-import { CheckCircle, Info, AlertTriangle } from "lucide-react";
+import { CheckCircle, Info } from "lucide-react";
 
 export interface QuoteData {
   wt: number;
@@ -66,7 +66,7 @@ export default function QuotePanel({ status, quote, onPay }: Props) {
             </svg>
           </div>
           <p style={{ fontSize: "0.875rem", lineHeight: 1.6 }}>
-            Upload an STL file above to generate your instant price estimate. We'll calculate material, weight, and print time automatically.
+            Upload an STL file above to generate your instant price estimate. We&apos;ll calculate material, weight, and print time automatically.
           </p>
         </div>
       )}

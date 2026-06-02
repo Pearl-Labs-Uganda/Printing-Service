@@ -87,6 +87,7 @@ export default function Hero() {
           <div className="hero-btn-group" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             <button
               onClick={() => scrollTo("upload")}
+              className="tap-target"
               style={{
                 display: "inline-flex", alignItems: "center", gap: "0.4rem",
                 padding: "0.8rem 2rem", borderRadius: "var(--radius-sm)",
@@ -97,6 +98,7 @@ export default function Hero() {
               Upload STL &amp; Get Quote <ArrowRight size={16} />
             </button>
             <button
+              className="tap-target"
               onClick={() => scrollTo("how-it-works")}
               style={{
                 display: "inline-flex", alignItems: "center", gap: "0.4rem",
@@ -133,7 +135,7 @@ export default function Hero() {
                     fontWeight: 700, color: "#fff", lineHeight: 1,
                   }}
                 >
-                  {s.value.replace(/(\d[\d,]+)(\+?)(hrs?)/, (_, n, plus, unit) => n)}
+                  {s.value.replace(/(\d[\d,]+)(\+?)(hrs?)/, (_, n) => n)}
                   <span style={{ color: "var(--brand-orange)" }}>
                     {s.value.replace(/^[\d,]+/, "")}
                   </span>
@@ -197,7 +199,7 @@ export default function Hero() {
             >
               <Package size={12} /> Order at a Glance
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+            <div className="three-col-grid">
               {[
                 { val: "PLA", lbl: "Material" },
                 { val: "0.2mm", lbl: "Layer" },

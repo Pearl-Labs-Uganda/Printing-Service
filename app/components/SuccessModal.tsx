@@ -13,6 +13,9 @@ export default function SuccessModal({ open, orderId, onClose, onViewSlicer }: P
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="success-modal-title"
       style={{
         position: "fixed", inset: 0, background: "rgba(0,15,30,0.6)",
         backdropFilter: "blur(6px)", zIndex: 1000, display: "flex",
@@ -20,15 +23,10 @@ export default function SuccessModal({ open, orderId, onClose, onViewSlicer }: P
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        style={{
-          background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)",
-          borderRadius: "var(--radius-xl)", padding: "2.5rem", maxWidth: 460, width: "100%",
-          position: "relative", boxShadow: "var(--shadow-lg)", textAlign: "center",
-        }}
-      >
+      <div className="modal-content" style={{ position: "relative", textAlign: "center", maxWidth: 460 }}>
         <button
           onClick={onClose}
+          aria-label="Close success dialog"
           style={{
             position: "absolute", top: "1rem", right: "1rem", background: "var(--bg-container)",
             border: "none", width: 32, height: 32, borderRadius: "var(--radius-sm)",
@@ -42,7 +40,7 @@ export default function SuccessModal({ open, orderId, onClose, onViewSlicer }: P
           <PartyPopper size={48} strokeWidth={1.5} />
         </div>
 
-        <h3 style={{ fontFamily: "var(--font-headline)", fontSize: "1.5rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "0.5rem" }}>
+        <h3 id="success-modal-title" style={{ fontFamily: "var(--font-headline)", fontSize: "1.5rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "0.5rem" }}>
           Order Confirmed!
         </h3>
         <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "1rem", lineHeight: 1.6 }}>
