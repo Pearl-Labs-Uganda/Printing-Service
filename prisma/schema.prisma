@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id               String   @id @default(cuid())
+  orderId          String   @unique
+  customerName     String
+  customerEmail    String
+  customerPhone    String
+  fileName         String
+  status           String   @default("pending_payment")
+  priority         String   @default("normal")
+  material         String
+  colour           String
+  quantity         Int
+  layerHeight      Float
+  infill           Int
+  quality          String
+  printType        String
+  postProcessing   String
+  postProcessingCost Int
+  totalPrice       Int
+  depositPrice     Int
+  balancePrice     Int
+  totalAmount      Int
+  depositAmount    Int
+  balanceAmount    Int
+  amountPaid       Int      @default(0)
+  paymentStatus    String   @default("PENDING")
+  paymentProvider  String   @default("flutterwave")
+  transactionReference String? @unique
+  flutterwaveTransactionId String?
+  paidAt           DateTime?
+  estWeightGrams   Int
+  estPrintHours    Int
+  estPrintMinutes  Int
+  readyAt          String
+  notes            String   @default("")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Material {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  description     String
+  pricePerGram    Float
+  colours         String   @default("Red,Yellow,Black,White")
+  inStock         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Settings {
+  id                       String   @id @default(cuid())
+  setupFee                 Int      @default(15000)
+  customColourFee          Int      @default(5000)
+  depositPercentage        Int      @default(50)
+  quoteValidHours          Int      @default(48)
+  expressSurchargePercent  Int      @default(25)
+  labEmail                 String   @default("pearllabsug@gmail.com")
+  labPhone                 String   @default("+256 (0) 200 901 001")
+  labAddress               String   @default("Kololo, Kampala, Uganda")
+  slicerPreviewEnabled     Boolean  @default(true)
+  maintenanceMode          Boolean  @default(false)
+  updatedAt                DateTime @updatedAt
+}

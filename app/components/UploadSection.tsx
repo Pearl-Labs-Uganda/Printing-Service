@@ -19,12 +19,14 @@ interface Props {
   selectedMat: string;
   matPrice: number;
   step: number;
+  orderPlaced?: boolean;
   onStepChange: (s: number) => void;
   onPayOpen: (q: QuoteData, fileName: string) => void;
+  onFilesChange?: (files: File[]) => void;
   onMatChange?: (matId: string, price: number) => void;
 }
 
-export default function UploadSection({ selectedMat, matPrice, step, onStepChange, onPayOpen, onMatChange }: Props) {
+export default function UploadSection({ selectedMat, matPrice, step, orderPlaced = false, onStepChange, onPayOpen, onFilesChange, onMatChange }: Props) {
   const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [quoteStatus, setQuoteStatus] = useState<"idle" | "loading" | "ready">("idle");
@@ -34,39 +36,86 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
   const [quality, setQuality] = useState("1.0");
   const [qty, setQty] = useState(1);
   const [colour, setColour] = useState("White");
+  const [printType, setPrintType] = useState<"FDM" | "SLS">("FDM");
+  const [postProcessing, setPostProcessing] = useState("None");
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fileSummary = files.length === 1 ? files[0].name : `${files.length} STL files`;
   const totalSizeKb = files.reduce((sum, currentFile) => sum + currentFile.size, 0) / 1024;
+  const postProcessingRates: Record<string, number> = {
+    None: 0,
+    Sanding: 3000,
+    Polishing: 5000,
+    Painting: 8000,
+  };
+  const recommendationItems = [
+    "Use Red for strong visual impact on finished parts.",
+    "Choose Yellow for prototypes that need quick visibility.",
+    "Black is best for functional parts and better dust hiding.",
+    "White is ideal for decorative and post-processed pieces.",
+    "Select Sanding for a smoother finish without extra paint.",
+  ];
 
   const calcQuote = useCallback(
-    (fileList: File[], lh: number, inf: number, ql: number, q: number, customCol: boolean, mat: string = selectedMat, matPriceVal: number = matPrice) => {
+    (
+      fileList: File[],
+      lh: number,
+      inf: number,
+      ql: number,
+      q: number,
+      postProc: string,
+      mat: string = selectedMat,
+      matPriceVal: number = matPrice,
+      type: string = printType
+    ) => {
       const baseWt = fileList.reduce((sum, currentFile) => {
         return sum + Math.max(14, (currentFile.size / 1024) * 0.11 * (inf / 30));
       }, 0);
       const wt = parseFloat((baseWt * ql).toFixed(1));
       const mins = Math.round(wt * (lh === 0.1 ? 4.5 : lh === 0.2 ? 2.8 : 1.8) * ql * q);
-      const hrs = Math.floor(mins / 60), rm = mins % 60;
-      const matCostTotal = Math.round(wt * matPriceVal * 1000) * q;
-      const total = matCostTotal + 15000 + (customCol ? 5000 : 0);
+      const postProcessingCost = postProcessingRates[postProc] * q;
+      const setupFee = 15000;
+      const typeMultiplier = type === "SLS" ? 1.0 : 1.0;
+      const matCostTotal = Math.round(wt * matPriceVal * 1000) * q * typeMultiplier;
+      const total = matCostTotal + setupFee + postProcessingCost;
       const half = Math.round(total / 2);
-      return { wt, hrs, rm, qty: q, total, half, bal: total - half, customCol, mat, lh, inf };
+      const readyDate = new Date(Date.now() + mins * 60000 + (postProc === "None" ? 0 : 30 * 60000));
+      const readyAt = readyDate.toLocaleString("en-UG", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      return {
+        wt,
+        hrs: Math.floor(mins / 60),
+        rm: mins % 60,
+        qty: q,
+        total,
+        half,
+        bal: total - half,
+        mat,
+        lh,
+        inf,
+        postProcessing: postProc,
+        postProcessingCost,
+        printType: type,
+        quality: ql.toString(),
+        colour,
+        readyAt,
+      };
     },
-    [matPrice, selectedMat]
+    [matPrice, selectedMat, printType, postProcessingRates]
   );
 
   const runQuote = useCallback(
-    (fileList: File[], lh = layer, inf = infill, ql = quality, q = qty, col = colour) => {
+    (fileList: File[], lh = layer, inf = infill, ql = quality, q = qty, postProc = postProcessing, type = printType) => {
       setQuoteStatus("loading");
       onStepChange(2);
       setTimeout(() => {
-        const result = calcQuote(fileList, parseFloat(lh), parseInt(inf), parseFloat(ql), q, col.includes("Custom"));
+        const result = calcQuote(fileList, parseFloat(lh), parseInt(inf), parseFloat(ql), q, postProc, selectedMat, matPrice, type);
         setQuote(result);
         setQuoteStatus("ready");
         onStepChange(3);
       }, 1600);
     },
-    [calcQuote, layer, infill, quality, qty, colour, onStepChange]
+    [calcQuote, layer, infill, quality, qty, postProcessing, printType, selectedMat, matPrice, onStepChange]
   );
 
   const handleFiles = (incomingFiles: File[]) => {
@@ -74,16 +123,17 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
     if (validFiles.length === 0) return;
 
     setFiles(validFiles);
+    onFilesChange?.(validFiles);
     onStepChange(2);
     runQuote(validFiles);
   };
 
-  const reCalc = (lh = layer, inf = infill, ql = quality, q = qty, col = colour, mat = selectedMat, matPriceVal = matPrice) => {
+  const reCalc = (lh = layer, inf = infill, ql = quality, q = qty, postProc = postProcessing, type = printType, mat = selectedMat, matPriceVal = matPrice) => {
     if (files.length === 0) return;
     setQuoteStatus("loading");
     onStepChange(2);
     setTimeout(() => {
-      const result = calcQuote(files, parseFloat(lh), parseInt(inf), parseFloat(ql), q, col.includes("Custom"), mat, matPriceVal);
+      const result = calcQuote(files, parseFloat(lh), parseInt(inf), parseFloat(ql), q, postProc, mat, matPriceVal, type);
       setQuote(result);
       setQuoteStatus("ready");
       onStepChange(3);
@@ -221,20 +271,90 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                 <Settings size={18} strokeWidth={1.5} /> Print Configuration
               </div>
               <div className="upload-config-grid">
-                {/* Material */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", gridColumn: "1 / -1" }}>
+                  <label style={LABEL_STYLE}>Print Type</label>
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                    {[
+                      { id: "FDM", label: "FDM — Pearl Labs" },
+                      { id: "SLS", label: "SLS — Lweera Electronics" },
+                    ].map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => {
+                          setPrintType(option.id as "FDM" | "SLS");
+                          reCalc(undefined, undefined, undefined, undefined, undefined, option.id as "FDM" | "SLS");
+                        }}
+                        style={{
+                          padding: "0.85rem 1rem",
+                          borderRadius: "var(--radius-sm)",
+                          border: `1.5px solid ${printType === option.id ? "var(--brand-blue)" : "var(--bg-container)"}`,
+                          background: printType === option.id ? "var(--bg-container-low)" : "var(--bg-surface)",
+                          color: printType === option.id ? "var(--brand-blue)" : "var(--text-primary)",
+                          cursor: "pointer",
+                          minWidth: 160,
+                          textAlign: "left",
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
+                    {printType === "SLS"
+                      ? "SLS orders are handled by Lweera Electronics and are scheduled with partner coordination."
+                      : "FDM orders are printed in-house by Pearl Labs using PLA."}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gridColumn: "1 / -1", gap: "0.75rem" }}>
+                  <div style={{ fontFamily: "var(--font-label)", fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: 600 }}>
+                    Need a recommendation?
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowRecommendations((current) => !current)}
+                    style={{
+                      border: "1.5px solid var(--brand-blue)",
+                      background: "transparent",
+                      color: "var(--brand-blue)",
+                      borderRadius: "var(--radius-sm)",
+                      padding: "0.65rem 0.95rem",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-label)",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {showRecommendations ? "Hide recommendations" : "Show recommendations"}
+                  </button>
+                </div>
+
+                {showRecommendations && (
+                  <div style={{ gridColumn: "1 / -1", padding: "1rem", background: "var(--bg-container-low)", border: "1px solid var(--bg-container)", borderRadius: "var(--radius-sm)", color: "var(--text-secondary)", lineHeight: 1.7 }}>
+                    <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+                      {recommendationItems.map((item) => (
+                        <li key={item} style={{ marginBottom: "0.5rem" }}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", gridColumn: "1 / -1" }}>
                   <label htmlFor={fieldIds.material} style={LABEL_STYLE}>Material</label>
                   <select id={fieldIds.material} style={SELECT_STYLE} value={selectedMat} onChange={(e) => {
                     const material = MATERIALS.find(m => m.id === e.target.value);
-                    if (material) {
+                    if (material && material.available) {
                       onMatChange?.(material.id, material.pricePerGram);
                       if (files.length > 0) {
-                        setTimeout(() => reCalc(layer, infill, quality, qty, colour, material.id, material.pricePerGram), 0);
+                        setTimeout(() => reCalc(layer, infill, quality, qty, postProcessing, printType, material.id, material.pricePerGram), 0);
                       }
                     }
                   }}>
                     {MATERIALS.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
+                      <option key={m.id} value={m.id} disabled={!m.available}>
+                        {m.name}{!m.available ? " — Currently unavailable" : ""}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -274,12 +394,22 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
                     onChange={(e) => { const v = Math.max(1, parseInt(e.target.value) || 1); setQty(v); reCalc(undefined, undefined, undefined, v); }} />
                 </div>
                 {/* Colour */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", gridColumn: "1 / -1" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label htmlFor={fieldIds.colour} style={LABEL_STYLE}>Colour</label>
-                  <select id={fieldIds.colour} style={SELECT_STYLE} value={colour} onChange={(e) => { setColour(e.target.value); reCalc(undefined, undefined, undefined, undefined, e.target.value); }}>
-                    {["White","Black","Red","Blue","Green","Yellow","Custom Colour (+UGX 5,000)"].map((c) => (
+                  <select id={fieldIds.colour} style={SELECT_STYLE} value={colour} onChange={(e) => { setColour(e.target.value); reCalc(undefined, undefined, undefined, undefined, undefined); }}>
+                    {['White','Black','Red','Yellow'].map((c) => (
                       <option key={c}>{c}</option>
                     ))}
+                  </select>
+                </div>
+                {/* Post-processing */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", gridColumn: "1 / -1" }}>
+                  <label htmlFor="postprocessing-select" style={LABEL_STYLE}>Post-processing</label>
+                  <select id="postprocessing-select" style={SELECT_STYLE} value={postProcessing} onChange={(e) => { setPostProcessing(e.target.value); reCalc(undefined, undefined, undefined, undefined, e.target.value); }}>
+                    <option value="None">None</option>
+                    <option value="Sanding">Sanding (+UGX 3,000 per item)</option>
+                    <option value="Polishing">Polishing (+UGX 5,000 per item)</option>
+                    <option value="Painting">Painting (+UGX 8,000 per item)</option>
                   </select>
                 </div>
               </div>
@@ -303,6 +433,7 @@ export default function UploadSection({ selectedMat, matPrice, step, onStepChang
             <QuotePanel
               status={quoteStatus}
               quote={quote}
+              orderPlaced={orderPlaced}
               onPay={() => { if (quote && files.length > 0) onPayOpen(quote, fileSummary); }}
             />
           </div>

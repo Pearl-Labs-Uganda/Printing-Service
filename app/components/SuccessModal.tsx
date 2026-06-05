@@ -1,14 +1,14 @@
 "use client";
-import { X, PartyPopper, ArrowRight } from "lucide-react";
+import { X, PartyPopper } from "lucide-react";
 
 interface Props {
   open: boolean;
   orderId: string;
+  readyAt: string;
   onClose: () => void;
-  onViewSlicer: () => void;
 }
 
-export default function SuccessModal({ open, orderId, onClose, onViewSlicer }: Props) {
+export default function SuccessModal({ open, orderId, readyAt, onClose }: Props) {
   if (!open) return null;
 
   return (
@@ -44,7 +44,7 @@ export default function SuccessModal({ open, orderId, onClose, onViewSlicer }: P
           Order Confirmed!
         </h3>
         <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "1rem", lineHeight: 1.6 }}>
-          Your deposit has been received. Your order is in the queue and the slicer preview is now unlocked.
+          Your deposit has been received and your order is confirmed. Our team will contact you shortly with delivery and post-processing details.
         </p>
 
         <div
@@ -58,12 +58,21 @@ export default function SuccessModal({ open, orderId, onClose, onViewSlicer }: P
           {orderId}
         </div>
 
+        <div style={{ textAlign: "left", marginBottom: "1rem", padding: "1rem", borderRadius: "var(--radius-sm)", background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e3a8a" }}>
+          <div style={{ fontWeight: 700, marginBottom: "0.5rem" }}>Order Tracking</div>
+          <ul style={{ margin: 0, paddingLeft: "1.2rem", lineHeight: 1.6, color: "#0f172a" }}>
+            <li>Deposit received and order confirmed.</li>
+            <li>Printing is now in process.</li>
+            <li>Estimated ready by <strong>{readyAt}</strong>.</li>
+          </ul>
+        </div>
+
         <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "1.5rem", lineHeight: 1.6 }}>
-          A confirmation will be sent to your email. Our team will contact you within 2 hours with a print timeline.
+          A confirmation will be sent to your email. Our team will contact you within 2 hours with delivery and finishing details.
         </p>
 
         <button
-          onClick={() => { onClose(); onViewSlicer(); }}
+          onClick={onClose}
           style={{
             width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
             gap: "0.4rem", padding: "0.8rem 2rem", borderRadius: "var(--radius-sm)",
@@ -71,7 +80,7 @@ export default function SuccessModal({ open, orderId, onClose, onViewSlicer }: P
             fontSize: "1rem", fontWeight: 600, background: "var(--brand-blue)", color: "#fff",
           }}
         >
-          View Slicing Preview <ArrowRight size={16} />
+          Close
         </button>
       </div>
     </div>

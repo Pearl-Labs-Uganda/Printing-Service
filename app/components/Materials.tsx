@@ -8,15 +8,16 @@ export interface Material {
   desc: string;
   priceLabel: string;
   pricePerGram: number;
+  available: boolean;
 }
 
 export const MATERIALS: Material[] = [
-  { id: "PLA",              icon: <Layers   size={26} strokeWidth={1.5} />, name: "PLA",              pricePerGram: 2.5, priceLabel: "UGX 2,500 / gram", desc: "Great for prototypes and decorative pieces. Easy to print with excellent detail."           },
-  { id: "ABS",              icon: <Zap      size={26} strokeWidth={1.5} />, name: "ABS",              pricePerGram: 3.2, priceLabel: "UGX 3,200 / gram", desc: "High temperature & impact resistance. Ideal for functional engineering parts."            },
-  { id: "PETG",             icon: <Droplets size={26} strokeWidth={1.5} />, name: "PETG",             pricePerGram: 3.8, priceLabel: "UGX 3,800 / gram", desc: "Flexible and durable. Food-safe and moisture-resistant finish."                           },
-  { id: "TPU",              icon: <Dumbbell size={26} strokeWidth={1.5} />, name: "TPU (Flexible)",   pricePerGram: 4.5, priceLabel: "UGX 4,500 / gram", desc: "Rubber-like flexibility. Perfect for gaskets, grips, and wearables."                      },
-  { id: "Resin (SLA)",      icon: <Gem      size={26} strokeWidth={1.5} />, name: "Resin (SLA)",      pricePerGram: 6.0, priceLabel: "UGX 6,000 / gram", desc: "Ultra-fine detail and smooth surfaces. Ideal for jewellery and miniatures."               },
-  { id: "Carbon Fiber PLA", icon: <Cpu      size={26} strokeWidth={1.5} />, name: "Carbon Fiber PLA", pricePerGram: 5.5, priceLabel: "UGX 5,500 / gram", desc: "Stiff, lightweight, and strong. Premium structural performance."                          },
+  { id: "PLA",              icon: <Layers   size={26} strokeWidth={1.5} />, name: "PLA",              pricePerGram: 0.5, priceLabel: "UGX 500 / gram", desc: "Great for prototypes and decorative pieces. Easy to print with excellent detail.", available: true },
+  { id: "ABS",              icon: <Zap      size={26} strokeWidth={1.5} />, name: "ABS",              pricePerGram: 3.2, priceLabel: "UGX 3,200 / gram", desc: "High temperature & impact resistance. Ideal for functional engineering parts.", available: false },
+  { id: "PETG",             icon: <Droplets size={26} strokeWidth={1.5} />, name: "PETG",             pricePerGram: 3.8, priceLabel: "UGX 3,800 / gram", desc: "Flexible and durable. Food-safe and moisture-resistant finish.", available: false },
+  { id: "TPU",              icon: <Dumbbell size={26} strokeWidth={1.5} />, name: "TPU (Flexible)",   pricePerGram: 4.5, priceLabel: "UGX 4,500 / gram", desc: "Rubber-like flexibility. Perfect for gaskets, grips, and wearables.", available: false },
+  { id: "Resin (SLA)",      icon: <Gem      size={26} strokeWidth={1.5} />, name: "Resin (SLA)",      pricePerGram: 6.0, priceLabel: "UGX 6,000 / gram", desc: "Ultra-fine detail and smooth surfaces. Ideal for jewellery and miniatures.", available: false },
+  { id: "Carbon Fiber PLA", icon: <Cpu      size={26} strokeWidth={1.5} />, name: "Carbon Fiber PLA", pricePerGram: 5.5, priceLabel: "UGX 5,500 / gram", desc: "Stiff, lightweight, and strong. Premium structural performance.", available: false },
 ];
 
 interface Props {
@@ -41,16 +42,19 @@ export default function Materials({ selected, onSelect }: Props) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "1rem" }}>
           {MATERIALS.map((m) => {
             const isSelected = selected === m.id;
+            const disabled = !m.available;
             return (
               <button
                 key={m.id}
-                onClick={() => onSelect(m.id, m.pricePerGram)}
+                onClick={() => !disabled && onSelect(m.id, m.pricePerGram)}
+                disabled={disabled}
                 style={{
                   background: isSelected ? "var(--bg-container-low)" : "var(--bg-surface)",
                   border: `1.5px solid ${isSelected ? "var(--brand-blue)" : "var(--bg-container)"}`,
                   borderRadius: "var(--radius-md)",
                   padding: "1.5rem",
-                  cursor: "pointer",
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.6 : 1,
                   textAlign: "left",
                   transition: "all 0.2s",
                   boxShadow: isSelected ? "var(--shadow-md)" : "none",
@@ -76,8 +80,11 @@ export default function Materials({ selected, onSelect }: Props) {
                 <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5, marginBottom: "0.75rem" }}>
                   {m.desc}
                 </div>
-                <div style={{ fontFamily: "var(--font-label)", fontSize: "0.75rem", fontWeight: 600, color: "var(--brand-orange)" }}>
+                <div style={{ fontFamily: "var(--font-label)", fontSize: "0.75rem", fontWeight: 600, color: disabled ? "var(--text-secondary)" : "var(--brand-orange)" }}>
                   {m.priceLabel}
+                  {disabled && <span style={{ display: "block", marginTop: "0.35rem", fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 500 }}>
+                    Currently unavailable
+                  </span>}
                 </div>
               </button>
             );

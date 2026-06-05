@@ -14,16 +14,14 @@ interface Props {
   quote: QuoteData | null;
   fileName: string;
   onClose: () => void;
-  onSuccess: (orderId: string) => void;
 }
 
-export default function PaymentModal({ open, quote, fileName, onClose, onSuccess }: Props) {
+export default function PaymentModal({ open, quote, fileName, onClose }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-
-  if (!open || !quote) return null;
+  const [error, setError] = useState<string | null>(null);
 
   const fmt = (n: number) => `UGX ${n.toLocaleString()}`;
   const fieldIds = {
@@ -32,18 +30,77 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
     phone: "payment-phone",
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!name.trim() || !email.trim() || !phone.trim()) {
-      alert("Please fill in all your details.");
+      setError("Please fill in all your details.");
       return;
     }
+
+    if (!quote) {
+      setError("Missing quote information.");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const cleanedPhone = phone.trim().replace(/\s+/g, "");
+      const orderResponse = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: name.trim(),
+          customerEmail: email.trim(),
+          customerPhone: cleanedPhone,
+          fileName,
+          material: quote.mat,
+          colour: quote.colour || "White",
+          quantity: quote.qty,
+          layerHeight: quote.lh,
+          infill: quote.inf,
+          quality: quote.quality,
+          printType: quote.printType,
+          postProcessing: quote.postProcessing,
+          postProcessingCost: quote.postProcessingCost,
+          readyAt: quote.readyAt,
+          estWeightGrams: Math.round(quote.wt),
+          estPrintHours: quote.hrs,
+          estPrintMinutes: quote.rm,
+          totalAmount: quote.total,
+        }),
+      });
+
+      if (!orderResponse.ok) {
+        const data = await orderResponse.json();
+        throw new Error(data?.error || "Failed to create order");
+      }
+
+      const order = await orderResponse.json();
+      const initResponse = await fetch("/api/flutterwave/init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.orderId }),
+      });
+
+      if (!initResponse.ok) {
+        const data = await initResponse.json();
+        throw new Error(data?.error || "Failed to initialize payment");
+      }
+
+      const initData = await initResponse.json();
+      if (!initData.checkoutUrl) {
+        throw new Error("Unable to load payment checkout link.");
+      }
+
+      window.location.href = initData.checkoutUrl;
+    } catch (err: any) {
+      setError(err.message || String(err));
       setLoading(false);
-      const id = "PL3D-" + Math.floor(10000 + Math.random() * 90000);
-      onSuccess(id);
-    }, 2000);
+    }
   };
+
+  if (!open || !quote) return null;
 
   return (
     <div
@@ -57,7 +114,7 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="modal-content" style={{ position: "relative" }}>
+      <div className="modal-content" style={{ position: "relative", width: "min(100%, 640px)" }}>
         <button
           onClick={onClose}
           aria-label="Close payment dialog"
@@ -75,20 +132,21 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
           Confirm Order &amp; Pay Deposit
         </h3>
         <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "1.75rem", lineHeight: 1.6 }}>
-          Review your quote below. A 50% deposit confirms your order and unlocks the slicing preview.
+          Review your quote below and continue to Flutterwave for the 50% deposit payment.
         </p>
 
-        {/* Summary */}
         <div style={{ background: "var(--bg-container-low)", border: "1px solid var(--bg-container-high)", borderRadius: "var(--radius-md)", padding: "1.25rem", marginBottom: "1.25rem" }}>
           {[
-            ["File",      fileName],
-            ["Material",  quote.mat],
-            ["Settings",  `${quote.lh}mm · ${quote.inf}% infill`],
-            ["Quantity",  `${quote.qty}`],
-          ].map(([l, v]) => (
-            <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "0.45rem 0", fontSize: "0.875rem", borderBottom: "1px solid var(--bg-container)" }}>
-              <span style={{ color: "var(--text-secondary)" }}>{l}</span>
-              <span style={{ fontFamily: "var(--font-label)", fontWeight: 600 }}>{v}</span>
+            ["File", fileName],
+            ["Material", quote.mat],
+            ["Print Type", quote.printType],
+            ["Post-processing", quote.postProcessing],
+            ["Settings", `${quote.lh}mm · ${quote.inf}% infill`],
+            ["Quantity", `${quote.qty}`],
+          ].map(([label, value]) => (
+            <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "0.45rem 0", fontSize: "0.875rem", borderBottom: "1px solid var(--bg-container)" }}>
+              <span style={{ color: "var(--text-secondary)" }}>{label}</span>
+              <span style={{ fontFamily: "var(--font-label)", fontWeight: 600 }}>{value}</span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "2px solid var(--bg-container-high)", fontWeight: 700 }}>
@@ -97,40 +155,46 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
           </div>
         </div>
 
-        {/* Warning */}
         <div style={{ display: "flex", gap: "0.6rem", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "var(--radius-sm)", padding: "0.75rem 1rem", marginBottom: "1.5rem", fontSize: "0.8rem", color: "#92400e", lineHeight: 1.5, alignItems: "flex-start" }}>
           <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
           <span>You are paying <strong>{fmt(quote.half)}</strong> (50% deposit). The remaining 50% is due on delivery or before dispatch.</span>
         </div>
 
-        {/* Fields */}
+        {error && (
+          <div style={{ display: "flex", gap: "0.6rem", background: "#fee2e2", border: "1px solid #fecaca", borderRadius: "var(--radius-sm)", padding: "0.75rem 1rem", marginBottom: "1.25rem", fontSize: "0.85rem", color: "#991b1b", alignItems: "flex-start" }}>
+            <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>{error}</span>
+          </div>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
           {[
-            { label: "Full Name",     type: "text",  val: name,  set: setName,  ph: "Jane Appleseed"       },
-            { label: "Email Address", type: "email", val: email, set: setEmail, ph: "jane@example.com"     },
-            { label: "Phone Number",  type: "tel",   val: phone, set: setPhone, ph: "+256 700 000 000"     },
-          ].map((f) => (
-            <div key={f.label} style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              <label htmlFor={f.label === "Full Name" ? fieldIds.name : f.label === "Email Address" ? fieldIds.email : fieldIds.phone} style={{ fontFamily: "var(--font-label)", fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)" }}>{f.label}</label>
+            { label: "Full Name", type: "text", val: name, set: setName, ph: "Jane Appleseed" },
+            { label: "Email Address", type: "email", val: email, set: setEmail, ph: "jane@example.com" },
+            { label: "Phone Number", type: "tel", val: phone, set: setPhone, ph: "+256 700 000 000" },
+          ].map((field) => (
+            <div key={field.label} style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label htmlFor={field.label.replace(/\s+/g, "-").toLowerCase()} style={{ fontFamily: "var(--font-label)", fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)" }}>{field.label}</label>
               <input
-                id={f.label === "Full Name" ? fieldIds.name : f.label === "Email Address" ? fieldIds.email : fieldIds.phone}
-                type={f.type} placeholder={f.ph} value={f.val}
-                autoComplete={f.type === "email" ? "email" : f.type === "tel" ? "tel" : "name"}
-                onChange={(e) => f.set(e.target.value)} style={INPUT_STYLE}
+                id={field.label.replace(/\s+/g, "-").toLowerCase()}
+                type={field.type}
+                placeholder={field.ph}
+                value={field.val}
+                autoComplete={field.type === "email" ? "email" : field.type === "tel" ? "tel" : "name"}
+                onChange={(e) => field.set(e.target.value)}
+                style={INPUT_STYLE}
               />
             </div>
           ))}
         </div>
 
-        {/* Actions */}
-        <div className="modal-actions" style={{ display: "flex", gap: "0.75rem" }}>
+        <div className="modal-actions" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           <button
             onClick={onClose}
             style={{
-              flex: 1, padding: "0.65rem", borderRadius: "var(--radius-sm)",
-              background: "var(--bg-container)", color: "var(--text-primary)",
-              border: "none", cursor: "pointer", fontFamily: "var(--font-label)",
-              fontSize: "0.875rem", fontWeight: 600,
+              flex: 1, minWidth: 130, padding: "0.65rem", borderRadius: "var(--radius-sm)",
+              background: "var(--bg-container)", color: "var(--text-primary)", border: "none", cursor: "pointer",
+              fontFamily: "var(--font-label)", fontSize: "0.875rem", fontWeight: 600,
             }}
           >
             Cancel
@@ -139,19 +203,15 @@ export default function PaymentModal({ open, quote, fileName, onClose, onSuccess
             onClick={handlePay}
             disabled={loading}
             style={{
-              flex: 1, padding: "0.65rem", borderRadius: "var(--radius-sm)",
-              background: "var(--brand-orange)", color: "#fff",
-              border: "none", cursor: loading ? "not-allowed" : "pointer",
-              fontFamily: "var(--font-label)", fontSize: "0.875rem", fontWeight: 600,
-              opacity: loading ? 0.7 : 1, display: "flex", alignItems: "center",
-              justifyContent: "center", gap: "0.4rem",
+              flex: 1, minWidth: 180, padding: "0.65rem", borderRadius: "var(--radius-sm)",
+              background: "var(--brand-orange)", color: "#fff", border: "none",
+              cursor: loading ? "not-allowed" : "pointer", fontFamily: "var(--font-label)",
+              fontSize: "0.875rem", fontWeight: 600, opacity: loading ? 0.7 : 1,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
             }}
           >
             {loading ? (
-              <>
-                <span className="spinner" style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />
-                Processing…
-              </>
+              <span className="spinner" style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />
             ) : (
               <><CreditCard size={14} /> Pay Deposit Now →</>
             )}

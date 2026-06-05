@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { ArrowRight, Layers, Clock, Package } from "lucide-react";
 
 const BAR_COLORS = [
@@ -97,19 +98,16 @@ export default function Hero() {
             >
               Upload STL &amp; Get Quote <ArrowRight size={16} />
             </button>
-            <button
-              className="tap-target"
-              onClick={() => scrollTo("how-it-works")}
-              style={{
+            <Link href="/how-it-works" className="tap-target" style={{
                 display: "inline-flex", alignItems: "center", gap: "0.4rem",
                 padding: "0.8rem 2rem", borderRadius: "var(--radius-sm)",
                 fontFamily: "var(--font-label)", fontSize: "1rem", fontWeight: 600,
                 background: "transparent", color: "#fff",
                 border: "1.5px solid rgba(255,255,255,0.5)", cursor: "pointer",
-              }}
-            >
+                textDecoration: "none",
+              }}>
               How it works
-            </button>
+            </Link>
           </div>
 
           {/* Stats */}

@@ -160,34 +160,38 @@ function PreviewTile({ file, color, material, layerHeight, infill, quality, quan
     animate();
 
     const onPointerDown = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      // Only start tracking if click is inside canvas bounds
+      if (event.clientX < rect.left || event.clientX > rect.right ||
+          event.clientY < rect.top || event.clientY > rect.bottom) {
+        return;
+      }
       isPointerDown = true;
-      canvas.setPointerCapture?.(event.pointerId);
       lastX = event.clientX;
       lastY = event.clientY;
     };
 
     const onPointerMove = (event: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect();
+      if (!isPointerDown) return;
 
-      if (isPointerDown) {
-        const dx = (event.clientX - lastX) / rect.width;
-        const dy = (event.clientY - lastY) / rect.height;
-        lastX = event.clientX;
-        lastY = event.clientY;
-        targetRotationY += dx * Math.PI;
-        targetRotationX += dy * Math.PI;
+      const rect = canvas.getBoundingClientRect();
+      
+      // Only update rotation if pointer is still within canvas bounds
+      if (event.clientX < rect.left || event.clientX > rect.right ||
+          event.clientY < rect.top || event.clientY > rect.bottom) {
         return;
       }
 
-      const x = (event.clientX - rect.left) / rect.width;
-      const y = (event.clientY - rect.top) / rect.height;
-      targetRotationY = (x - 0.5) * Math.PI;
-      targetRotationX = (y - 0.5) * Math.PI;
+      const dx = (event.clientX - lastX) / rect.width;
+      const dy = (event.clientY - lastY) / rect.height;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      targetRotationY += dx * 0.5;
+      targetRotationX += dy * 0.5;
     };
 
     const onPointerUp = (event: PointerEvent) => {
       isPointerDown = false;
-      canvas.releasePointerCapture?.(event.pointerId);
     };
 
     canvas.addEventListener("pointerdown", onPointerDown);

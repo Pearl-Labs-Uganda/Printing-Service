@@ -9,21 +9,27 @@ export interface QuoteData {
   total: number;
   half: number;
   bal: number;
-  customCol: boolean;
   mat: string;
   lh: number;
   inf: number;
+  postProcessing: string;
+  postProcessingCost: number;
+  printType: string;
+  quality: string;
+  colour: string;
+  readyAt: string;
 }
 
 interface Props {
   status: "idle" | "loading" | "ready";
   quote: QuoteData | null;
+  orderPlaced?: boolean;
   onPay: () => void;
 }
 
 const fmt = (n: number) => `UGX ${n.toLocaleString()}`;
 
-export default function QuotePanel({ status, quote, onPay }: Props) {
+export default function QuotePanel({ status, quote, orderPlaced = false, onPay }: Props) {
   return (
     <div
       className="quote-panel"
@@ -50,9 +56,14 @@ export default function QuotePanel({ status, quote, onPay }: Props) {
             Calculating…
           </span>
         )}
-        {status === "ready" && (
+        {status === "ready" && !orderPlaced && (
           <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", background: "#dcfce7", color: "#16a34a", padding: "0.2rem 0.65rem", borderRadius: 999, fontFamily: "var(--font-label)", fontSize: "0.7rem", fontWeight: 600 }}>
             <CheckCircle size={11} /> Ready
+          </span>
+        )}
+        {orderPlaced && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", background: "#fef3c7", color: "#92400e", padding: "0.2rem 0.65rem", borderRadius: 999, fontFamily: "var(--font-label)", fontSize: "0.7rem", fontWeight: 600 }}>
+            <CheckCircle size={11} /> Order in process
           </span>
         )}
       </div>
@@ -90,14 +101,15 @@ export default function QuotePanel({ status, quote, onPay }: Props) {
         <>
           {[
             ["Material",      quote.mat],
+            ["Print Type",    quote.printType],
             ["Est. Weight",   `~${quote.wt}g`],
             ["Print Time",    quote.hrs > 0 ? `${quote.hrs}h ${quote.rm}m` : `${quote.rm}m`],
+            ["Estimated Ready", quote.readyAt],
             ["Layer Height",  `${quote.lh}mm`],
             ["Infill",        `${quote.inf}%`],
             ["Quantity",      `${quote.qty}`],
-            ["Material Cost", fmt(quote.total - 15000 - (quote.customCol ? 5000 : 0))],
+            ["Post-processing", quote.postProcessing === "None" ? "None" : `${quote.postProcessing} (${fmt(quote.postProcessingCost)})`],
             ["Setup Fee",     "UGX 15,000"],
-            ...(quote.customCol ? [["Custom Colour", "UGX 5,000"]] : []),
           ].map(([lbl, val]) => (
             <div
               key={lbl}
@@ -163,29 +175,49 @@ export default function QuotePanel({ status, quote, onPay }: Props) {
           {/* Info */}
           <div
             style={{
-              display: "flex", gap: "0.6rem", background: "var(--bg-container-low)",
-              border: "1px solid var(--bg-container-high)", borderRadius: "var(--radius-sm)",
-              padding: "0.75rem 1rem", marginBottom: "1.25rem", fontSize: "0.8rem",
-              color: "var(--text-secondary)", lineHeight: 1.5, alignItems: "flex-start",
+              display: "flex", gap: "0.75rem", background: "#fff7ed",
+              border: "1px solid #f59e0b", borderRadius: "var(--radius-md)",
+              padding: "1rem 1.15rem", marginBottom: "1.25rem", fontSize: "0.9rem",
+              color: "#92400e", lineHeight: 1.6, alignItems: "flex-start",
             }}
           >
-            <Info size={15} style={{ flexShrink: 0, marginTop: 1, color: "var(--brand-blue)" }} />
-            <span>
-              Paying 50% now confirms your order and <strong>unlocks the slicing preview</strong> so you can inspect the print layer-by-layer before we start.
-            </span>
+            <Info size={18} style={{ flexShrink: 0, marginTop: 2, color: "#f97316" }} />
+            <div>
+              <strong style={{ display: "block", marginBottom: "0.35rem", color: "#b45309" }}>
+                Delivery fee is not included in this estimate.
+              </strong>
+              <span>
+                Delivery is payable by the customer. Pay 50% now to confirm your order, and the remaining balance is due on delivery.
+              </span>
+            </div>
           </div>
 
-          <button
-            onClick={onPay}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
-              padding: "0.8rem 2rem", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer",
-              fontFamily: "var(--font-label)", fontSize: "1rem", fontWeight: 600,
-              background: "var(--brand-orange)", color: "#fff",
-            }}
-          >
-            Confirm Order &amp; Pay 50% Deposit →
-          </button>
+          {orderPlaced && quote && (
+            <div style={{ background: "#e0f2fe", border: "1px solid #bae6fd", borderRadius: "var(--radius-md)", padding: "1rem 1.15rem", marginBottom: "1.25rem", color: "#0c4a6e", lineHeight: 1.6 }}>
+              <div style={{ fontFamily: "var(--font-headline)", fontWeight: 700, marginBottom: "0.75rem" }}>
+                Order progress
+              </div>
+              <ol style={{ paddingLeft: "1.1rem", margin: 0, listStyleType: "decimal", display: "grid", gap: "0.5rem" }}>
+                <li>Deposit received — payment confirmed.</li>
+                <li>Printing in process.</li>
+                <li>Estimated ready by <strong>{quote.readyAt}</strong>.</li>
+              </ol>
+            </div>
+          )}
+
+          {!orderPlaced && (
+            <button
+              onClick={onPay}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
+                padding: "0.8rem 2rem", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer",
+                fontFamily: "var(--font-label)", fontSize: "1rem", fontWeight: 600,
+                background: "var(--brand-orange)", color: "#fff",
+              }}
+            >
+              Confirm Order &amp; Pay 50% Deposit →
+            </button>
+          )}
         </>
       )}
     </div>

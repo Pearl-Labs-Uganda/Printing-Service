@@ -29,6 +29,25 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Environment variables
+
+Create a `.env.local` file in the project root and add your Flutterwave credentials there.
+
+Example variables:
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+FLW_BASE_URL=https://api.flutterwave.com
+FLW_SECRET_KEY=your_flutterwave_secret_key_here
+FLW_PUBLIC_KEY=your_flutterwave_public_key_here
+FLW_HASH_KEY=your_flutterwave_hash_key_here
+FLW_ENCRYPTION_KEY=your_flutterwave_encryption_key_here
+```
+
+- `FLW_SECRET_KEY` is required by the server-side payment routes.
+- `FLW_PUBLIC_KEY` can be used for browser-side SDKs if you add them later.
+- `FLW_HASH_KEY` and `FLW_ENCRYPTION_KEY` are additional Flutterwave credentials for advanced integrations.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

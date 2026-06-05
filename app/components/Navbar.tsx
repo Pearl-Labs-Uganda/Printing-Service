@@ -89,36 +89,6 @@ export default function Navbar() {
             </Link>
           </li>
           <li>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                scrollTo("slicer");
-              }}
-              style={{
-                padding: "0.45rem 0.9rem",
-                fontFamily: "var(--font-label)",
-                fontSize: "0.82rem",
-                fontWeight: 500,
-                color: "var(--text-secondary)",
-                background: "transparent",
-                border: "none",
-                borderRadius: "var(--radius-sm)",
-                cursor: "pointer",
-                transition: "color 0.15s, background 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = "var(--brand-blue)";
-                (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-container-low)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)";
-                (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-              }}
-            >
-              Slicer
-            </button>
-          </li>
-          <li>
             <Link
               href="/#upload"
               className="tap-target"
