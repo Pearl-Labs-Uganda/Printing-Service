@@ -427,8 +427,8 @@ textarea:focus-visible {
 }
 
 /* Modal content sizing (mobile-friendly) */
-.modal-content { background: var(--bg-surface); border: 1.5px solid var(--bg-container); border-radius: var(--radius-xl); padding: 2.5rem; max-width: 520px; width: 100%; box-shadow: var(--shadow-lg); }
-@media (max-width: 640px) { .modal-content { padding: 1rem; border-radius: var(--radius-md); max-width: 100%; } }
+.modal-content { background: var(--bg-surface); border: 1.5px solid var(--bg-container); border-radius: var(--radius-xl); padding: 2.5rem; max-width: 520px; width: 100%; box-sizing: border-box; box-shadow: var(--shadow-lg); }
+@media (max-width: 640px) { .modal-content { padding: 1rem; border-radius: var(--radius-md); max-width: 100%; box-sizing: border-box; } }
 
 /* Touch targets */
 .tap-target { min-height: 44px; min-width: 44px; padding: 0.6rem 0.8rem; }

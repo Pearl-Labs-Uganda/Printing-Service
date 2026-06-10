@@ -1,13 +1,15 @@
 import Link from "next/link";
 
 interface Props {
-  searchParams: {
+  searchParams: Promise<{
     orderId?: string;
     error?: string;
-  };
+  }>;
 }
 
-export default function PaymentFailedPage({ searchParams }: Props) {
+export default async function PaymentFailedPage({ searchParams }: Props) {
+  const { orderId, error } = await searchParams;
+
   return (
     <main style={{ minHeight: "100vh", padding: "4rem 1.5rem", background: "#f8fafc", color: "#111827" }}>
       <div style={{ maxWidth: 760, margin: "0 auto", background: "#fff", borderRadius: "1rem", padding: "2.5rem", boxShadow: "0 30px 60px rgba(15, 23, 42, 0.08)" }}>
@@ -15,14 +17,14 @@ export default function PaymentFailedPage({ searchParams }: Props) {
         <p style={{ fontSize: "1rem", lineHeight: 1.75, marginBottom: "1.5rem" }}>
           Unfortunately we could not confirm your payment. Please try again or contact support if the issue persists.
         </p>
-        {searchParams.orderId && (
+        {orderId && (
           <div style={{ marginBottom: "1rem", padding: "1.1rem", borderRadius: "0.85rem", background: "#fef3f2", border: "1px solid #fecaca", color: "#991b1b" }}>
-            <strong>Order reference:</strong> {searchParams.orderId}
+            <strong>Order reference:</strong> {orderId}
           </div>
         )}
-        {searchParams.error && (
+        {error && (
           <div style={{ marginBottom: "1.5rem", padding: "1.1rem", borderRadius: "0.85rem", background: "#f8fafc", border: "1px solid #cbd5e1", color: "#1f2937" }}>
-            <strong>Error:</strong> {searchParams.error.replace(/_/g, " ")}
+            <strong>Error:</strong> {error.replace(/_/g, " ")}
           </div>
         )}
         <p style={{ fontSize: "0.95rem", color: "#475569" }}>

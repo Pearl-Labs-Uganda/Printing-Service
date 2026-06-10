@@ -31,14 +31,24 @@ export async function POST(request: NextRequest) {
 
     const depositAmount = order.depositAmount || Math.round(order.totalAmount / 2);
     const redirectUrl = `${APP_URL}/api/flutterwave/verify`;
-    const cleanedPhone = order.customerPhone?.trim().replace(/\s+/g, "") || "";
+    const rawPhone = order.customerPhone?.trim() || "";
+    const digitsOnlyPhone = rawPhone.replace(/\D/g, "");
+    const cleanedPhone = digitsOnlyPhone.startsWith("0")
+      ? `256${digitsOnlyPhone.slice(1)}`
+      : digitsOnlyPhone.startsWith("7")
+      ? `256${digitsOnlyPhone}`
+      : digitsOnlyPhone;
+
+    if (!cleanedPhone.match(/^256[0-9]{9,10}$/)) {
+      return NextResponse.json({ error: `Invalid Uganda mobile money number: ${cleanedPhone}` }, { status: 400 });
+    }
 
     const payload = {
       tx_ref: order.orderId,
       amount: String(depositAmount),
       currency: "UGX",
       redirect_url: redirectUrl,
-      payment_options: "card,mobilemoneyuganda",
+      payment_options: "mobilemoneyuganda",
       email: order.customerEmail,
       phone_number: cleanedPhone,
       fullname: order.customerName,
@@ -69,20 +79,56 @@ export async function POST(request: NextRequest) {
     const rawData = await res.json();
     const data = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
 
+    // Log full response so we can see what Flutterwave returns for MoMo Uganda
+    console.log("Flutterwave init response:", JSON.stringify(data, null, 2));
+
     if (!res.ok || !data?.status || data.status !== "success") {
       const errorMessage = data?.message || `Flutterwave init failed: ${res.status}`;
       return NextResponse.json({ error: errorMessage }, { status: 502 });
     }
 
+    const mode = data?.meta?.authorization?.mode;
+    const flwRef = data?.data?.flw_ref;
+
+    console.log("MoMo auth mode:", mode, "flw_ref:", flwRef);
+
+    // Mobile Money Uganda returns a redirect link or OTP mode
     const checkoutUrl =
       data?.data?.link ||
       data?.data?.checkout_url ||
       data?.meta?.authorization?.redirect;
-    if (!checkoutUrl) {
-      return NextResponse.json({ error: "Invalid Flutterwave response" }, { status: 502 });
+
+    if (checkoutUrl) {
+      // Redirect flow — send customer to Flutterwave hosted page
+      return NextResponse.json({ checkoutUrl, mode: "redirect" });
     }
 
-    return NextResponse.json({ checkoutUrl });
+    if (mode === "otp" || mode === "pin") {
+      // OTP flow — customer enters OTP on your own UI
+      return NextResponse.json({
+        mode,
+        flwRef,
+        message: data?.message || "OTP sent to customer phone",
+      });
+    }
+
+    if (mode === "callback" || !mode) {
+      // Callback/polling flow — Flutterwave will notify via webhook
+      return NextResponse.json({
+        mode: "callback",
+        flwRef,
+        message: "Payment request sent. Customer will receive a prompt on their phone.",
+      });
+    }
+
+    // Fallback — unknown mode, log and return raw data for debugging
+    return NextResponse.json({
+      mode: "unknown",
+      flwRef,
+      raw: data,
+      message: "Unexpected Flutterwave response — check server logs",
+    });
+
   } catch (error: any) {
     console.error("Flutterwave init error:", error);
     return NextResponse.json({ error: error.message || String(error) }, { status: 500 });

@@ -43,7 +43,13 @@ export async function POST(request: NextRequest) {
       totalAmount,
     } = body;
 
-    const cleanedPhone = String(customerPhone || "").trim().replace(/\s+/g, "");
+    const rawPhone = String(customerPhone || "").trim();
+    const digitsOnlyPhone = rawPhone.replace(/\D/g, "");
+    const cleanedPhone = digitsOnlyPhone.startsWith("0")
+      ? `256${digitsOnlyPhone.slice(1)}`
+      : digitsOnlyPhone.startsWith("7")
+      ? `256${digitsOnlyPhone}`
+      : digitsOnlyPhone;
     const cleanedEmail = String(customerEmail || "").trim().toLowerCase();
 
     if (

@@ -110,11 +110,12 @@ export default function PaymentModal({ open, quote, fileName, onClose }: Props) 
       style={{
         position: "fixed", inset: 0, background: "rgba(0,15,30,0.6)",
         backdropFilter: "blur(6px)", zIndex: 1000, display: "flex",
-        alignItems: "center", justifyContent: "center", padding: "1.5rem",
+        alignItems: "center", justifyContent: "center", padding: "1rem",
+        overflowY: "auto", minHeight: "100vh",
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="modal-content" style={{ position: "relative", width: "min(100%, 640px)" }}>
+      <div className="modal-content" style={{ position: "relative", width: "100%", maxWidth: 520, maxHeight: "calc(100vh - 2rem)", overflowY: "auto" }}>
         <button
           onClick={onClose}
           aria-label="Close payment dialog"
@@ -144,9 +145,9 @@ export default function PaymentModal({ open, quote, fileName, onClose }: Props) 
             ["Settings", `${quote.lh}mm · ${quote.inf}% infill`],
             ["Quantity", `${quote.qty}`],
           ].map(([label, value]) => (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "0.45rem 0", fontSize: "0.875rem", borderBottom: "1px solid var(--bg-container)" }}>
-              <span style={{ color: "var(--text-secondary)" }}>{label}</span>
-              <span style={{ fontFamily: "var(--font-label)", fontWeight: 600 }}>{value}</span>
+            <div key={label} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "0.5rem", padding: "0.45rem 0", fontSize: "0.875rem", borderBottom: "1px solid var(--bg-container)" }}>
+              <span style={{ color: "var(--text-secondary)", minWidth: 0, flex: "1 1 auto" }}>{label}</span>
+              <span style={{ fontFamily: "var(--font-label)", fontWeight: 600, minWidth: 0, flex: "1 1 auto", textAlign: "right" }}>{value}</span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "2px solid var(--bg-container-high)", fontWeight: 700 }}>
