@@ -39,6 +39,7 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
   const [printType, setPrintType] = useState<"FDM" | "SLS">("FDM");
   const [postProcessing, setPostProcessing] = useState("None");
   const [showRecommendations, setShowRecommendations] = useState(false);
+  const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fileSummary = files.length === 1 ? files[0].name : `${files.length} STL files`;
@@ -118,7 +119,7 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
     [calcQuote, layer, infill, quality, qty, postProcessing, printType, selectedMat, matPrice, onStepChange]
   );
 
-  const handleFiles = (incomingFiles: File[]) => {
+  const handleFiles = async (incomingFiles: File[]) => {
     const validFiles = incomingFiles.filter((currentFile) => currentFile.name.toLowerCase().endsWith(".stl"));
     if (validFiles.length === 0) return;
 
@@ -126,6 +127,23 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
     onFilesChange?.(validFiles);
     onStepChange(2);
     runQuote(validFiles);
+
+    // Upload files to server and store returned server filenames
+    const serverNames: string[] = [];
+    for (const file of validFiles) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        serverNames.push(data.filename);
+        console.log("Uploaded:", data.url);
+      } catch (err) {
+        console.error("Upload failed:", err);
+        serverNames.push(file.name); // fallback to original name
+      }
+    }
+    setUploadedFileNames(serverNames);
   };
 
   const reCalc = (lh = layer, inf = infill, ql = quality, q = qty, postProc = postProcessing, type = printType, mat = selectedMat, matPriceVal = matPrice) => {
@@ -205,63 +223,63 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
         <div className="upload-layout">
           {/* Upload Card */}
           <div className="upload-card upload-card-compact" style={{ background: "var(--bg-surface)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)" }}>
-              <div style={{ fontFamily: "var(--font-headline)", fontSize: "1.1rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <UploadCloud size={18} strokeWidth={1.5} /> Upload STL
-              </div>
+            <div style={{ fontFamily: "var(--font-headline)", fontSize: "1.1rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <UploadCloud size={18} strokeWidth={1.5} /> Upload STL
+            </div>
 
-              {/* Drop zone */}
-              <div
-                onClick={() => inputRef.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  handleFiles(Array.from(e.dataTransfer.files));
-                }}
-                style={{
-                  border: `2px dashed ${files.length > 0 ? "#22c55e" : dragOver ? "var(--brand-blue)" : "var(--bg-dim)"}`,
-                  borderRadius: "var(--radius-md)", padding: "1.5rem 1.25rem",
-                  textAlign: "center", cursor: "pointer",
-                  background: dragOver ? "var(--bg-container-low)" : "transparent",
-                  transition: "all 0.2s", marginBottom: files.length > 0 ? "1rem" : 0,
-                }}
-              >
-                <input ref={inputRef} type="file" multiple accept=".stl" aria-label="Upload STL files" style={{ display: "none" }} onChange={(e) => { handleFiles(Array.from(e.target.files ?? [])); }} />
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem", color: files.length > 0 ? "#22c55e" : "var(--brand-blue)" }}>
-                  <UploadCloud size={32} strokeWidth={1.5} />
-                </div>
-                <h3 style={{ fontFamily: "var(--font-headline)", fontSize: "1rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "0.4rem" }}>
-                  Drop your STL file{files.length > 1 ? "s" : ""} here
-                </h3>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>or click to browse multiple files</p>
-                <div style={{ marginTop: "0.75rem", fontFamily: "var(--font-label)", fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--brand-orange)" }}>
-                  Accepted: .STL
-                </div>
+            {/* Drop zone */}
+            <div
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                handleFiles(Array.from(e.dataTransfer.files));
+              }}
+              style={{
+                border: `2px dashed ${files.length > 0 ? "#22c55e" : dragOver ? "var(--brand-blue)" : "var(--bg-dim)"}`,
+                borderRadius: "var(--radius-md)", padding: "1.5rem 1.25rem",
+                textAlign: "center", cursor: "pointer",
+                background: dragOver ? "var(--bg-container-low)" : "transparent",
+                transition: "all 0.2s", marginBottom: files.length > 0 ? "1rem" : 0,
+              }}
+            >
+              <input ref={inputRef} type="file" multiple accept=".stl" aria-label="Upload STL files" style={{ display: "none" }} onChange={(e) => { handleFiles(Array.from(e.target.files ?? [])); }} />
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem", color: files.length > 0 ? "#22c55e" : "var(--brand-blue)" }}>
+                <UploadCloud size={32} strokeWidth={1.5} />
               </div>
+              <h3 style={{ fontFamily: "var(--font-headline)", fontSize: "1rem", fontWeight: 700, color: "var(--brand-blue)", marginBottom: "0.4rem" }}>
+                Drop your STL file{files.length > 1 ? "s" : ""} here
+              </h3>
+              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>or click to browse multiple files</p>
+              <div style={{ marginTop: "0.75rem", fontFamily: "var(--font-label)", fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--brand-orange)" }}>
+                Accepted: .STL
+              </div>
+            </div>
 
-              {/* File strip */}
-              {files.length > 0 && (
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", background: "var(--bg-container-low)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-sm)", padding: "0.75rem 1rem" }}>
-                  <FileText size={20} strokeWidth={1.5} style={{ color: "var(--brand-blue)", flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <strong style={{ display: "block", fontSize: "0.875rem", color: "var(--brand-blue)", fontWeight: 600 }}>{fileSummary}</strong>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "var(--font-label)" }}>
-                      {totalSizeKb.toFixed(1)} KB total · {files.length} STL{files.length > 1 ? "s" : ""}
-                    </span>
-                    {files.length > 1 && (
-                      <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                        {files.map((currentFile) => (
-                          <span key={currentFile.name + currentFile.size} style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>
-                            {currentFile.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <CheckCircle size={16} style={{ color: "#22c55e" }} />
+            {/* File strip */}
+            {files.length > 0 && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", background: "var(--bg-container-low)", border: "1.5px solid var(--bg-container)", borderRadius: "var(--radius-sm)", padding: "0.75rem 1rem" }}>
+                <FileText size={20} strokeWidth={1.5} style={{ color: "var(--brand-blue)", flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <strong style={{ display: "block", fontSize: "0.875rem", color: "var(--brand-blue)", fontWeight: 600 }}>{fileSummary}</strong>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "var(--font-label)" }}>
+                    {totalSizeKb.toFixed(1)} KB total · {files.length} STL{files.length > 1 ? "s" : ""}
+                  </span>
+                  {files.length > 1 && (
+                    <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      {files.map((currentFile) => (
+                        <span key={currentFile.name + currentFile.size} style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>
+                          {currentFile.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+                <CheckCircle size={16} style={{ color: "#22c55e" }} />
+              </div>
+            )}
           </div>
 
           <div className="config-preview-row">
@@ -358,7 +376,6 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
                     ))}
                   </select>
                 </div>
-                {/* Layer height */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label htmlFor={fieldIds.layer} style={LABEL_STYLE}>Layer Height</label>
                   <select id={fieldIds.layer} style={SELECT_STYLE} value={layer} onChange={(e) => { setLayer(e.target.value); reCalc(e.target.value); }}>
@@ -367,7 +384,6 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
                     <option value="0.3">0.3mm — Draft</option>
                   </select>
                 </div>
-                {/* Infill */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label htmlFor={fieldIds.infill} style={LABEL_STYLE}>Infill %</label>
                   <select id={fieldIds.infill} style={SELECT_STYLE} value={infill} onChange={(e) => { setInfill(e.target.value); reCalc(undefined, e.target.value); }}>
@@ -378,7 +394,6 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
                     <option value="100">100% — Full</option>
                   </select>
                 </div>
-                {/* Quality */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label htmlFor={fieldIds.quality} style={LABEL_STYLE}>Quality</label>
                   <select id={fieldIds.quality} style={SELECT_STYLE} value={quality} onChange={(e) => { setQuality(e.target.value); reCalc(undefined, undefined, e.target.value); }}>
@@ -387,22 +402,19 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
                     <option value="1.6">Ultra Quality</option>
                   </select>
                 </div>
-                {/* Qty */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label htmlFor={fieldIds.quantity} style={LABEL_STYLE}>Quantity</label>
                   <input id={fieldIds.quantity} type="number" min={1} max={100} value={qty} style={SELECT_STYLE}
                     onChange={(e) => { const v = Math.max(1, parseInt(e.target.value) || 1); setQty(v); reCalc(undefined, undefined, undefined, v); }} />
                 </div>
-                {/* Colour */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label htmlFor={fieldIds.colour} style={LABEL_STYLE}>Colour</label>
                   <select id={fieldIds.colour} style={SELECT_STYLE} value={colour} onChange={(e) => { setColour(e.target.value); reCalc(undefined, undefined, undefined, undefined, undefined); }}>
-                    {['White','Black','Red','Yellow'].map((c) => (
+                    {['White', 'Black', 'Red', 'Yellow'].map((c) => (
                       <option key={c}>{c}</option>
                     ))}
                   </select>
                 </div>
-                {/* Post-processing */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", gridColumn: "1 / -1" }}>
                   <label htmlFor="postprocessing-select" style={LABEL_STYLE}>Post-processing</label>
                   <select id="postprocessing-select" style={SELECT_STYLE} value={postProcessing} onChange={(e) => { setPostProcessing(e.target.value); reCalc(undefined, undefined, undefined, undefined, e.target.value); }}>
@@ -434,7 +446,15 @@ export default function UploadSection({ selectedMat, matPrice, step, orderPlaced
               status={quoteStatus}
               quote={quote}
               orderPlaced={orderPlaced}
-              onPay={() => { if (quote && files.length > 0) onPayOpen(quote, fileSummary); }}
+              onPay={() => {
+                if (quote && files.length > 0) {
+                  // Use server filename if available, fallback to display name
+                  const serverFileName = uploadedFileNames.length > 0
+                    ? uploadedFileNames[0]
+                    : fileSummary;
+                  onPayOpen(quote, serverFileName);
+                }
+              }}
             />
           </div>
         </div>
